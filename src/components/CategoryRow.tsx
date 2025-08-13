@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CategoryRowProps {
   title: string;
@@ -21,6 +22,7 @@ export default function CategoryRow({ title, type, path }: CategoryRowProps) {
 
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [provider, setProvider] = useState<"2embed" | "vidsrc" | "superembed">("2embed");
 
   useEffect(() => {
     let active = true;
@@ -44,18 +46,23 @@ export default function CategoryRow({ title, type, path }: CategoryRowProps) {
 
   const embedUrl = () => {
     if (!selectedId) return "";
-    if (type === "movie") {
-      return `https://www.2embed.to/embed/tmdb/movie?id=${selectedId}`;
+    if (provider === "2embed") {
+      if (type === "movie") return `https://www.2embed.to/embed/tmdb/movie?id=${selectedId}`;
+      return `https://www.2embed.to/embed/tmdb/tv?id=${selectedId}&season=1&episode=1`;
     }
-    // Default to S1E1 for TV as requested
-    return `https://www.2embed.to/embed/tmdb/tv?id=${selectedId}&season=1&episode=1`;
+    if (provider === "vidsrc") {
+      if (type === "movie") return `https://vidsrc.icu/embed/movie/${selectedId}`;
+      return `https://vidsrc.icu/embed/tv/${selectedId}/1/1`;
+    }
+    // superembed
+    if (type === "movie") return `https://multiembed.mov/directstream.php?video_id=${selectedId}&tmdb=1`;
+    return `https://multiembed.mov/directstream.php?video_id=${selectedId}&tmdb=1&s=1&e=1`;
   };
-
   const onPosterClick = (id: number) => {
     setSelectedId(id);
+    setProvider("2embed");
     setOpen(true);
   };
-
   if (loading && items.length === 0) return null;
 
   return (
@@ -117,15 +124,24 @@ export default function CategoryRow({ title, type, path }: CategoryRowProps) {
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
+
+          <Tabs value={provider} onValueChange={(v) => setProvider(v as any)} className="mb-3">
+            <TabsList>
+              <TabsTrigger value="2embed">2Embed</TabsTrigger>
+              <TabsTrigger value="vidsrc">VidSrc</TabsTrigger>
+              <TabsTrigger value="superembed">Superembed</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           <div className="aspect-video w-full overflow-hidden rounded-md border border-border">
             {selectedId && (
               <iframe
-                key={embedUrl()}
+                key={`${provider}-${selectedId}`}
                 src={embedUrl()}
                 className="h-full w-full"
                 allowFullScreen
                 referrerPolicy="no-referrer"
-                title="2embed player"
+                title={`${provider} player`}
               />
             )}
           </div>
